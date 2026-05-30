@@ -58,14 +58,15 @@ func (h *EmployeeHandler) create(w http.ResponseWriter, r *http.Request) {
 	var emp models.Employee
 	json.NewDecoder(r.Body).Decode(&emp)
 
-	if err := h.Service.Create(emp); err != nil {
+	created, err := h.Service.Create(emp)
+	if err != nil {
 		h.writeError(w, err)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(emp)
+	json.NewEncoder(w).Encode(created)
 }
 
 func (h *EmployeeHandler) get(w http.ResponseWriter, r *http.Request, id string) {

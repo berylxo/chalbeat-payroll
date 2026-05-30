@@ -1,8 +1,9 @@
 package services
 
 import (
+	"database/sql"
 	"errors"
-	"sort"
+	"fmt"
 	"sync"
 
 	"github.com/berylxo/chalbeat-payroll/models"
@@ -10,67 +11,117 @@ import (
 
 var ErrEmployeeNotFound = errors.New("employee not found")
 var ErrEmployeeExists = errors.New("employee already exists")
-var ErrEmployeeIDRequired = errors.New("employee id is required")
 
 type EmployeeService struct {
-	mu    sync.RWMutex
-	store map[string]models.Employee
+	db   *sql.DB
+	mu   sync.Mutex
 }
 
-func NewEmployeeService() *EmployeeService {
-	return &EmployeeService{store: make(map[string]models.Employee)}
+func NewEmployeeService(db *sql.DB) *EmployeeService {
+	return &EmployeeService{db: db}
+}
+
+func (s *EmployeeService) generateEmployeeID() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	row := s.db.QueryRow("SELECT COUNT(*) FROM employees")
+	var count int
+	_ = row.Scan(&count)
+
+	id := fmt.Sprintf("EMP-%d", count+1)
+	return id
 }
 
 func (s *EmployeeService) List() []models.Employee {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	employees := make([]models.Employee, 0, len(s.store))
-	for _, emp := range s.store {
-		employees = append(employees, emp)
+	rows, err := s.db.Query("SELECT employee_id, name, phone_number, email, national_id, kra_pin, position, basic_pay FROM employees ORDER BY employee_id")
+	if err != nil {
+		return []models.Employee{}
 	}
-	sort.SliceStable(employees, func(i, j int) bool {
-		return employees[i].EmployeeID < employees[j].EmployeeID
-	})
+	defer rows.Close()
+
+	var employees []models.Employee
+	for rows.Next() {
+		var emp models.Employee
+		err := rows.Scan(
+			&emp.EmployeeID,
+			&emp.Name,
+			&emp.PhoneNumber,
+			&emp.Email,
+			&emp.NationalID,
+			&emp.KraPin,
+			&emp.Position,
+			&emp.BasicPay,
+		)
+		if err == nil {
+			employees = append(employees, emp)
+		}
+	}
 	return employees
 }
 
 func (s *EmployeeService) Get(id string) (models.Employee, bool) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	emp, ok := s.store[id]
-	return emp, ok
+	var emp models.Employee
+	row := s.db.QueryRow(
+		"SELECT employee_id, name, phone_number, email, national_id, kra_pin, position, basic_pay FROM employees WHERE employee_id = ?",
+		id,
+	)
+	err := row.Scan(
+		&emp.EmployeeID,
+		&emp.Name,
+		&emp.PhoneNumber,
+		&emp.Email,
+		&emp.NationalID,
+		&emp.KraPin,
+		&emp.Position,
+		&emp.BasicPay,
+	)
+	if err != nil {
+		return models.Employee{}, false
+	}
+	return emp, true
 }
 
-func (s *EmployeeService) Create(emp models.Employee) error {
-	if emp.EmployeeID == "" {
-		return ErrEmployeeIDRequired
-	}
+func (s *EmployeeService) Create(emp models.Employee) (models.Employee, error) {
+	emp.EmployeeID = s.generateEmployeeID()
 
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if _, ok := s.store[emp.EmployeeID]; ok {
-		return ErrEmployeeExists
+	_, err := s.db.Exec(
+		"INSERT INTO employees (employee_id, name, phone_number, email, national_id, kra_pin, position, basic_pay) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+		emp.EmployeeID,
+		emp.Name,
+		emp.PhoneNumber,
+		emp.Email,
+		emp.NationalID,
+		emp.KraPin,
+		emp.Position,
+		emp.BasicPay,
+	)
+	if err != nil {
+		return models.Employee{}, err
 	}
-	s.store[emp.EmployeeID] = emp
-	return nil
+	return emp, nil
 }
 
 func (s *EmployeeService) Update(id string, emp models.Employee) (models.Employee, error) {
 	if id == "" {
-		return models.Employee{}, ErrEmployeeIDRequired
+		return models.Employee{}, errors.New("employee id is required")
 	}
 
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if _, ok := s.store[id]; !ok {
-		return models.Employee{}, ErrEmployeeNotFound
+	_, err := s.db.Exec(
+		"UPDATE employees SET name = ?, phone_number = ?, email = ?, national_id = ?, kra_pin = ?, position = ?, basic_pay = ? WHERE employee_id = ?",
+		emp.Name,
+		emp.PhoneNumber,
+		emp.Email,
+		emp.NationalID,
+		emp.KraPin,
+		emp.Position,
+		emp.BasicPay,
+		id,
+	)
+	if err != nil {
+		return models.Employee{}, err
 	}
 
 	emp.EmployeeID = id
-	s.store[id] = emp
 	return emp, nil
 }
