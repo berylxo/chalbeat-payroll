@@ -28,7 +28,8 @@ export default function EmployeeList() {
     try {
       const res = await fetch(`${API_BASE}/api/v1/employees`)
       if (!res.ok) throw new Error('Unable to load employees')
-      setEmployees(await res.json())
+      const data = await res.json()
+      setEmployees(Array.isArray(data) ? data : [])
     } catch (err) {
       setError(err.message)
     } finally {
@@ -67,9 +68,9 @@ export default function EmployeeList() {
 
       {loading && <p>Loading employees…</p>}
       {error && <p className="error-message">{error}</p>}
-      {!loading && employees.length === 0 && <p>No employees yet. Add one to get started.</p>}
+      {!loading && (employees?.length ?? 0) === 0 && <p>No employees yet. Add one to get started.</p>}
 
-      {employees.length > 0 && (
+      {employees?.length > 0 && (
         <div className="table-wrapper">
           <table>
             <thead>
@@ -83,7 +84,7 @@ export default function EmployeeList() {
               </tr>
             </thead>
             <tbody>
-              {employees.map((employee) => (
+              {employees?.map((employee) => (
                 <tr key={employee.employee_id}>
                   <td>{employee.employee_id}</td>
                   <td>{employee.name}</td>
@@ -95,7 +96,7 @@ export default function EmployeeList() {
                       Edit
                     </Link>
                     <button className="button button-small button-outline" onClick={() => downloadPayslip(employee.employee_id)}>
-                      Payslip
+                      Download Payslip
                     </button>
                   </td>
                 </tr>

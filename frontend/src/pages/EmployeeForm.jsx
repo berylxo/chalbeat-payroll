@@ -6,12 +6,13 @@ export default function EmployeeForm({ editMode = false }) {
   const navigate = useNavigate()
   const { id } = useParams()
   const [employee, setEmployee] = useState({
-    employee_id: '',
     name: '',
     kra_pin: '',
     position: '',
     basic_pay: '',
   })
+  const [generatedId, setGeneratedId] = useState(null)
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [message, setMessage] = useState(null)
@@ -42,7 +43,6 @@ export default function EmployeeForm({ editMode = false }) {
     setLoading(true)
 
     const payload = {
-      employee_id: employee.employee_id,
       name: employee.name,
       kra_pin: employee.kra_pin,
       position: employee.position,
@@ -62,10 +62,12 @@ export default function EmployeeForm({ editMode = false }) {
         throw new Error(body.error || 'Unable to save employee')
       }
       const saved = await res.json()
-      setMessage(editMode ? 'Employee updated successfully.' : 'Employee created successfully.')
       if (!editMode) {
-        navigate('/')
+        setGeneratedId(saved.employee_id)
+        setMessage(`Employee created successfully. ID: ${saved.employee_id}`)
+        setTimeout(() => navigate('/'), 2000)
       } else {
+        setMessage('Employee updated successfully.')
         setEmployee(saved)
       }
     } catch (err) {
@@ -94,19 +96,13 @@ export default function EmployeeForm({ editMode = false }) {
       {loading && <p>Loading…</p>}
       {error && <p className="error-message">{error}</p>}
       {message && <p className="success-message">{message}</p>}
+      {generatedId && !editMode && (
+        <div className="info-banner">
+          <strong>Employee ID:</strong> {generatedId}
+        </div>
+      )}
 
       <form className="form-grid" onSubmit={handleSubmit}>
-        <label>
-          Employee ID
-          <input
-            value={employee.employee_id}
-            onChange={(event) => updateField('employee_id', event.target.value)}
-            disabled={editMode}
-            required
-            placeholder="EMP001"
-          />
-        </label>
-
         <label>
           Full Name
           <input

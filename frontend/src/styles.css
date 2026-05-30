@@ -170,8 +170,14 @@ label {
   gap: 20px;
 }
 
-.form-grid label:nth-child(5) {
-  grid-column: span 2;
+.info-banner {
+  background: #eff1ff;
+  border: 1px solid #dde0fa;
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  color: #342bef;
+  font-weight: 500;
 }
 
 .error-message {
