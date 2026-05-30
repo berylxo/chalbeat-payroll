@@ -14,14 +14,10 @@ type PayrollHandler struct {
 
 func (h *PayrollHandler) Calculate(w http.ResponseWriter, r *http.Request) {
 
-	var req struct {
-		Employee models.Employee
-		Optional []models.Deduction
-	}
-
+	var req models.PayrollRequest
 	json.NewDecoder(r.Body).Decode(&req)
 
-	result := h.Service.Run(req.Employee, req.Optional)
+	result := h.Service.Run(req.BasicPay, req.OptionalDeductions)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(result)

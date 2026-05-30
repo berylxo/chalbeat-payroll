@@ -6,9 +6,9 @@ type Calculator struct {
 	Rules models.Rules
 }
 
-func (c *Calculator) Calculate(emp models.Employee, optional []models.Deduction) models.PayrollResult {
+func (c *Calculator) Calculate(basicPay float64, optional []models.Deduction) models.PayrollResult {
 
-	gross := emp.BasicPay
+	gross := basicPay
 
 	paye := CalculatePAYE(gross, c.Rules)
 	nssf := CalculateNSSF(gross, c.Rules)
@@ -30,7 +30,6 @@ func (c *Calculator) Calculate(emp models.Employee, optional []models.Deduction)
 	}
 
 	return models.PayrollResult{
-		EmployeeID: emp.ID,
 		GrossPay:   gross,
 		NetPay:     gross - total,
 		Deductions: deductions,

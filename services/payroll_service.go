@@ -9,6 +9,6 @@ type PayrollService struct {
 	Calculator *engine.Calculator
 }
 
-func (s *PayrollService) Run(emp models.Employee, optional []models.Deduction) models.PayrollResult {
-	return s.Calculator.Calculate(emp, optional)
+func (s *PayrollService) Run(basicPay float64, optional []models.Deduction) models.PayrollResult {
+	return s.Calculator.Calculate(basicPay, optional)
 }

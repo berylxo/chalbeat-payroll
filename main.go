@@ -4,12 +4,30 @@ import (
 	"log"
 	"net/http"
 
-	"payroll-service/routes"
+	"github.com/berylxo/chalbeat-payroll/engine"
+	"github.com/berylxo/chalbeat-payroll/models"
+	"github.com/berylxo/chalbeat-payroll/routes"
+	"github.com/berylxo/chalbeat-payroll/services"
 )
 
 func main() {
-	r := routes.SetupRouter()
 
-	log.Println("Payroll service running on :8080")
+	// 1. Load default calculation rules
+	rules := models.DefaultRules()
+
+	// 2. Build engine
+	calculator := &engine.Calculator{
+		Rules: rules,
+	}
+
+	// 3. Build service
+	service := &services.PayrollService{
+		Calculator: calculator,
+	}
+
+	// 4. Router
+	r := routes.SetupRouter(service)
+
+	log.Println("Server running on http://localhost:8080")
 	log.Fatal(http.ListenAndServe(":8080", r))
 }

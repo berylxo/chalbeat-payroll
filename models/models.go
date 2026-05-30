@@ -1,10 +1,10 @@
 package models
 
 type Employee struct {
-	ID       string
-	Name     string
-	KraPin   string
-	BasicPay float64
+	ID       string  `json:"id"`
+	Name     string  `json:"name"`
+	KraPin   string  `json:"kra_pin"`
+	BasicPay float64 `json:"basic_pay"`
 }
 
 type Deduction struct {
@@ -12,6 +12,11 @@ type Deduction struct {
 	Description string  `json:"description"`
 	Amount      float64 `json:"amount"`
 	Mandatory   bool    `json:"mandatory"`
+}
+
+type PayrollRequest struct {
+	BasicPay          float64     `json:"basic_pay"`
+	OptionalDeductions []Deduction `json:"optional_deductions"`
 }
 
 type PayrollResult struct {
