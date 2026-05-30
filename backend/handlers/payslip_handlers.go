@@ -144,6 +144,7 @@ func (h *PayslipHandler) renderPayslipHTML(emp models.Employee, payroll models.P
 	}
 	type viewData struct {
 		CompanyLogo string
+		LogoPath    string
 		Period      string
 		Employee    employeeView
 		Earnings    earningsView
@@ -162,6 +163,7 @@ func (h *PayslipHandler) renderPayslipHTML(emp models.Employee, payroll models.P
 
 	data := viewData{
 		CompanyLogo: logoDataURI,
+		LogoPath:    "file://" + logoPath,
 		Period:      time.Now().Format("January 2006"),
 		Employee: employeeView{
 			Name:       emp.Name,
