@@ -1,0 +1,161 @@
+import { useEffect, useState } from 'react'
+import { useNavigate, useParams, Link } from 'react-router-dom'
+import { API_BASE } from '../App'
+
+export default function EmployeeForm({ editMode = false }) {
+  const navigate = useNavigate()
+  const { id } = useParams()
+  const [employee, setEmployee] = useState({
+    id: '',
+    name: '',
+    kra_pin: '',
+    position: '',
+    basic_pay: '',
+  })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const [message, setMessage] = useState(null)
+
+  useEffect(() => {
+    if (editMode && id) {
+      fetchEmployee(id)
+    }
+  }, [editMode, id])
+
+  async function fetchEmployee(employeeId) {
+    setLoading(true)
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/employees/${employeeId}`)
+      if (!res.ok) throw new Error('Unable to load employee')
+      setEmployee(await res.json())
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault()
+    setError(null)
+    setMessage(null)
+    setLoading(true)
+
+    const payload = {
+      id: employee.id,
+      name: employee.name,
+      kra_pin: employee.kra_pin,
+      position: employee.position,
+      basic_pay: Number(employee.basic_pay),
+    }
+
+    try {
+      const url = editMode ? `${API_BASE}/api/v1/employees/${id}` : `${API_BASE}/api/v1/employees`
+      const method = editMode ? 'PUT' : 'POST'
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) {
+        const body = await res.json()
+        throw new Error(body.error || 'Unable to save employee')
+      }
+      const saved = await res.json()
+      setMessage(editMode ? 'Employee updated successfully.' : 'Employee created successfully.')
+      if (!editMode) {
+        navigate('/')
+      } else {
+        setEmployee(saved)
+      }
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  function updateField(name, value) {
+    setEmployee((previous) => ({ ...previous, [name]: value }))
+  }
+
+  return (
+    <div className="page-card">
+      <div className="toolbar">
+        <div>
+          <h2>{editMode ? 'Edit Employee' : 'Add New Employee'}</h2>
+          <p>{editMode ? 'Update the employee record and save changes.' : 'Enter the details for a new team member.'}</p>
+        </div>
+        <Link className="button button-outline" to="/">
+          Back to Directory
+        </Link>
+      </div>
+
+      {loading && <p>Loading…</p>}
+      {error && <p className="error-message">{error}</p>}
+      {message && <p className="success-message">{message}</p>}
+
+      <form className="form-grid" onSubmit={handleSubmit}>
+        <label>
+          Employee ID
+          <input
+            value={employee.id}
+            onChange={(event) => updateField('id', event.target.value)}
+            disabled={editMode}
+            required
+            placeholder="EMP001"
+          />
+        </label>
+
+        <label>
+          Full Name
+          <input
+            value={employee.name}
+            onChange={(event) => updateField('name', event.target.value)}
+            required
+            placeholder="Jane Doe"
+          />
+        </label>
+
+        <label>
+          KRA PIN
+          <input
+            value={employee.kra_pin}
+            onChange={(event) => updateField('kra_pin', event.target.value)}
+            required
+            placeholder="A123456789X"
+          />
+        </label>
+
+        <label>
+          Job Position
+          <input
+            value={employee.position}
+            onChange={(event) => updateField('position', event.target.value)}
+            required
+            placeholder="Frontend Engineer"
+          />
+        </label>
+
+        <label>
+          Basic Salary
+          <input
+            type="number"
+            value={employee.basic_pay}
+            onChange={(event) => updateField('basic_pay', event.target.value)}
+            required
+            min="0"
+            step="0.01"
+            placeholder="40000"
+          />
+        </label>
+
+        <div className="form-actions">
+          <button className="button button-primary" type="submit" disabled={loading}>
+            {editMode ? 'Save Changes' : 'Create Employee'}
+          </button>
+        </div>
+      </form>
+    </div>
+  )
+}

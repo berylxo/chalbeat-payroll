@@ -20,13 +20,15 @@ func main() {
 		Rules: rules,
 	}
 
-	// 3. Build service
-	service := &services.PayrollService{
+	// 3. Build services
+	payrollService := &services.PayrollService{
 		Calculator: calculator,
 	}
 
+	employeeService := services.NewEmployeeService()
+
 	// 4. Router
-	r := routes.SetupRouter(service)
+	r := routes.SetupRouter(payrollService, employeeService)
 
 	log.Println("Server running on http://localhost:8080")
 	log.Fatal(http.ListenAndServe(":8080", r))

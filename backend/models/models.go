@@ -4,6 +4,7 @@ type Employee struct {
 	ID       string  `json:"id"`
 	Name     string  `json:"name"`
 	KraPin   string  `json:"kra_pin"`
+	Position string  `json:"position"`
 	BasicPay float64 `json:"basic_pay"`
 }
 
