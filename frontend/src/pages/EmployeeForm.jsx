@@ -6,7 +6,7 @@ export default function EmployeeForm({ editMode = false }) {
   const navigate = useNavigate()
   const { id } = useParams()
   const [employee, setEmployee] = useState({
-    id: '',
+    employee_id: '',
     name: '',
     kra_pin: '',
     position: '',
@@ -42,7 +42,7 @@ export default function EmployeeForm({ editMode = false }) {
     setLoading(true)
 
     const payload = {
-      id: employee.id,
+      employee_id: employee.employee_id,
       name: employee.name,
       kra_pin: employee.kra_pin,
       position: employee.position,
@@ -99,8 +99,8 @@ export default function EmployeeForm({ editMode = false }) {
         <label>
           Employee ID
           <input
-            value={employee.id}
-            onChange={(event) => updateField('id', event.target.value)}
+            value={employee.employee_id}
+            onChange={(event) => updateField('employee_id', event.target.value)}
             disabled={editMode}
             required
             placeholder="EMP001"

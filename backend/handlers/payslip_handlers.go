@@ -3,13 +3,18 @@ package handlers
 import (
 	"archive/zip"
 	"bytes"
+	"encoding/base64"
 	"fmt"
+	"html/template"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
+	"time"
 
+	"github.com/SebastiaanKlippert/go-wkhtmltopdf"
 	"github.com/berylxo/chalbeat-payroll/models"
 	"github.com/berylxo/chalbeat-payroll/services"
-	"github.com/jung-kurt/gofpdf"
 )
 
 type PayslipHandler struct {
@@ -36,7 +41,7 @@ func (h *PayslipHandler) GeneratePDF(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/pdf")
-	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=Payslip-%s.pdf", emp.ID))
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=Payslip-%s.pdf", emp.EmployeeID))
 	w.Write(buffer.Bytes())
 }
 
@@ -59,7 +64,7 @@ func (h *PayslipHandler) GenerateBulkZip(w http.ResponseWriter, r *http.Request)
 			return
 		}
 
-		fileName := fmt.Sprintf("Payslip-%s.pdf", emp.ID)
+		fileName := fmt.Sprintf("Payslip-%s.pdf", emp.EmployeeID)
 		zipFile, err := zipWriter.Create(fileName)
 		if err != nil {
 			zipWriter.Close()
@@ -77,52 +82,127 @@ func (h *PayslipHandler) GenerateBulkZip(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *PayslipHandler) renderPayslipPDF(emp models.Employee, payroll models.PayrollResult) (*bytes.Buffer, error) {
-	pdf := gofpdf.New("P", "mm", "A4", "")
-	pdf.SetTitle("Payslip", false)
-	pdf.AddPage()
-	pdf.SetFont("Arial", "B", 18)
-	pdf.Cell(0, 10, "Payslip")
-	pdf.Ln(12)
-
-	pdf.SetFont("Arial", "", 12)
-	pdf.Cell(40, 8, "Employee ID:")
-	pdf.Cell(0, 8, emp.ID)
-	pdf.Ln(8)
-	pdf.Cell(40, 8, "Name:")
-	pdf.Cell(0, 8, emp.Name)
-	pdf.Ln(8)
-	pdf.Cell(40, 8, "KRA PIN:")
-	pdf.Cell(0, 8, emp.KraPin)
-	pdf.Ln(8)
-	pdf.Cell(40, 8, "Position:")
-	pdf.Cell(0, 8, emp.Position)
-	pdf.Ln(12)
-
-	pdf.SetFont("Arial", "B", 14)
-	pdf.Cell(0, 8, "Summary")
-	pdf.Ln(10)
-
-	pdf.SetFont("Arial", "", 12)
-	pdf.Cell(60, 8, "Gross Pay:")
-	pdf.Cell(0, 8, fmt.Sprintf("%.2f", payroll.GrossPay))
-	pdf.Ln(8)
-	pdf.Cell(60, 8, "Net Pay:")
-	pdf.Cell(0, 8, fmt.Sprintf("%.2f", payroll.NetPay))
-	pdf.Ln(12)
-
-	pdf.Cell(0, 8, "Deductions")
-	pdf.Ln(8)
-	for _, deduction := range payroll.Deductions {
-		pdf.Cell(60, 8, deduction.Description+":")
-		pdf.Cell(0, 8, fmt.Sprintf("%.2f", deduction.Amount))
-		pdf.Ln(8)
-	}
-
-	buffer := &bytes.Buffer{}
-	if err := pdf.Output(buffer); err != nil {
+	html, err := h.renderPayslipHTML(emp, payroll)
+	if err != nil {
 		return nil, err
 	}
-	return buffer, nil
+
+	pdfg, err := wkhtmltopdf.NewPDFGenerator()
+	if err != nil {
+		return nil, err
+	}
+
+	page := wkhtmltopdf.NewPageReader(strings.NewReader(html))
+	page.EnableLocalFileAccess.Set(true)
+	pdfg.AddPage(page)
+	pdfg.Dpi.Set(300)
+	pdfg.PageSize.Set(wkhtmltopdf.PageSizeA4)
+
+	if err := pdfg.Create(); err != nil {
+		return nil, err
+	}
+
+	return bytes.NewBuffer(pdfg.Bytes()), nil
+}
+
+func (h *PayslipHandler) renderPayslipHTML(emp models.Employee, payroll models.PayrollResult) (string, error) {
+	templateDir, err := findTemplatesDir()
+	if err != nil {
+		return "", err
+	}
+
+	templatePath := filepath.Join(templateDir, "payslip.html")
+	logoPath := filepath.Join(templateDir, "logo.png")
+
+	tpl, err := template.ParseFiles(templatePath)
+	if err != nil {
+		return "", err
+	}
+
+	logoBytes, err := os.ReadFile(logoPath)
+	if err != nil {
+		return "", err
+	}
+	logoDataURI := "data:image/png;base64," + base64.StdEncoding.EncodeToString(logoBytes)
+
+	type employeeView struct {
+		Name       string
+		ID         string
+		EmployeeID string
+		KraPin     string
+		Department string
+	}
+	type earningsView struct {
+		BasicSalary float64
+		GrossPay    float64
+		Allowances  []models.Deduction
+	}
+	type totalsView struct {
+		GrossPay        float64
+		TotalDeductions float64
+		NetPay          float64
+	}
+	type viewData struct {
+		CompanyLogo string
+		Period      string
+		Employee    employeeView
+		Earnings    earningsView
+		Deductions  []models.Deduction
+		Totals      totalsView
+		GeneratedAt string
+	}
+
+	totals := totalsView{
+		GrossPay: payroll.GrossPay,
+		NetPay:   payroll.NetPay,
+	}
+	for _, deduction := range payroll.Deductions {
+		totals.TotalDeductions += deduction.Amount
+	}
+
+	data := viewData{
+		CompanyLogo: logoDataURI,
+		Period:      time.Now().Format("January 2006"),
+		Employee: employeeView{
+			Name:       emp.Name,
+			ID:         emp.EmployeeID,
+			EmployeeID: emp.EmployeeID,
+			KraPin:     emp.KraPin,
+			Department: emp.Position,
+		},
+		Earnings: earningsView{
+			BasicSalary: emp.BasicPay,
+			GrossPay:    payroll.GrossPay,
+			Allowances:  nil,
+		},
+		Deductions:  payroll.Deductions,
+		Totals:      totals,
+		GeneratedAt: time.Now().Format("02 Jan 2006 15:04"),
+	}
+
+	var buf bytes.Buffer
+	if err := tpl.Execute(&buf, data); err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
+}
+
+func findTemplatesDir() (string, error) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	tryPath := filepath.Join(cwd, "templates")
+	if fi, err := os.Stat(tryPath); err == nil && fi.IsDir() {
+		return tryPath, nil
+	}
+
+	executable, err := os.Executable()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(filepath.Dir(executable), "templates"), nil
 }
 
 func (h *PayslipHandler) writeError(w http.ResponseWriter, status int, message string) {

@@ -30,7 +30,7 @@ func (s *EmployeeService) List() []models.Employee {
 		employees = append(employees, emp)
 	}
 	sort.SliceStable(employees, func(i, j int) bool {
-		return employees[i].ID < employees[j].ID
+		return employees[i].EmployeeID < employees[j].EmployeeID
 	})
 	return employees
 }
@@ -44,17 +44,17 @@ func (s *EmployeeService) Get(id string) (models.Employee, bool) {
 }
 
 func (s *EmployeeService) Create(emp models.Employee) error {
-	if emp.ID == "" {
+	if emp.EmployeeID == "" {
 		return ErrEmployeeIDRequired
 	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if _, ok := s.store[emp.ID]; ok {
+	if _, ok := s.store[emp.EmployeeID]; ok {
 		return ErrEmployeeExists
 	}
-	s.store[emp.ID] = emp
+	s.store[emp.EmployeeID] = emp
 	return nil
 }
 
@@ -70,7 +70,7 @@ func (s *EmployeeService) Update(id string, emp models.Employee) (models.Employe
 		return models.Employee{}, ErrEmployeeNotFound
 	}
 
-	emp.ID = id
+	emp.EmployeeID = id
 	s.store[id] = emp
 	return emp, nil
 }

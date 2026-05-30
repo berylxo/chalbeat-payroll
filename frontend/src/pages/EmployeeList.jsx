@@ -84,17 +84,17 @@ export default function EmployeeList() {
             </thead>
             <tbody>
               {employees.map((employee) => (
-                <tr key={employee.id}>
-                  <td>{employee.id}</td>
+                <tr key={employee.employee_id}>
+                  <td>{employee.employee_id}</td>
                   <td>{employee.name}</td>
                   <td>{employee.kra_pin}</td>
                   <td>{employee.position}</td>
                   <td>{employee.basic_pay.toFixed(2)}</td>
                   <td className="actions-cell">
-                    <Link className="button button-small" to={`/edit/${employee.id}`}>
+                    <Link className="button button-small" to={`/edit/${employee.employee_id}`}>
                       Edit
                     </Link>
-                    <button className="button button-small button-outline" onClick={() => downloadPayslip(employee.id)}>
+                    <button className="button button-small button-outline" onClick={() => downloadPayslip(employee.employee_id)}>
                       Payslip
                     </button>
                   </td>

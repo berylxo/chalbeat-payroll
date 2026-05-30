@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Payslip - CHALBEAT MEDICAL CENTRE</title>
+    <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+    <style>
+        :root {
+            --primary:    #1B3A5C;
+            --accent:     #2E7D5E;
+            --accent-lt:  #E8F4F0;
+            --border:     #D0D9E4;
+            --muted:      #6B7A8D;
+            --bg:         #F5F7FA;
+            --white:      #FFFFFF;
+            --text:       #1A2330;
+            --danger:     #C0392B;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        /* ── PAGE WRAPPER ─────────────────────────────────────────── */
+        .page {
+            max-width: 800px;
+            margin: 32px auto;
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: 0 4px 24px rgba(27,58,92,.10);
+        }
+
+        /* ── TOP STRIPE ───────────────────────────────────────────── */
+        .top-stripe {
+            height: 5px;
+            background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
+        }
+
+        /* ── HEADER ───────────────────────────────────────────────── */
+        .header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            padding: 28px 36px 22px;
+            border-bottom: 1px solid var(--border);
+            gap: 20px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo-box {
+            width: 56px;
+            height: 56px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            flex-shrink: 0;
+            background: var(--bg);
+        }
+
+        .logo-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .company-info h1 {
+            font-family: 'EB Garamond', serif;
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary);
+            letter-spacing: 0.5px;
+            line-height: 1.2;
+        }
+
+        .company-info p {
+            font-size: 11px;
+            color: var(--muted);
+            margin-top: 3px;
+            letter-spacing: 0.3px;
+        }
+
+        .header-right {
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        .payslip-badge {
+            display: inline-block;
+            background: var(--primary);
+            color: var(--white);
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            padding: 4px 12px;
+            border-radius: 2px;
+            margin-bottom: 8px;
+        }
+
+        .header-right .period-label {
+            font-size: 11px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .header-right .period-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        /* ── EMPLOYEE CARD ────────────────────────────────────────── */
+        .employee-card {
+            background: var(--bg);
+            border-bottom: 1px solid var(--border);
+            padding: 18px 36px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px 20px;
+        }
+
+        .emp-field {}
+        .emp-field .label {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--muted);
+            margin-bottom: 3px;
+        }
+        .emp-field .value {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        /* ── BODY ─────────────────────────────────────────────────── */
+        .body {
+            padding: 0 36px 28px;
+        }
+
+        /* ── SECTION HEADER ───────────────────────────────────────── */
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 28px 0 0;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--primary);
+        }
+
+        .section-header .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent);
+            flex-shrink: 0;
+        }
+
+        .section-header h3 {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: var(--primary);
+        }
+
+        /* ── TABLES ───────────────────────────────────────────────── */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 0;
+        }
+
+        table thead tr {
+            background: var(--bg);
+        }
+
+        table thead th {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--muted);
+            padding: 8px 10px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        table thead th.right { text-align: right; }
+
+        table tbody tr {
+            border-bottom: 1px solid #EEF1F6;
+            transition: background .12s;
+        }
+
+        table tbody tr:last-child { border-bottom: none; }
+        table tbody tr:hover { background: #FAFBFD; }
+
+        table tbody td {
+            padding: 9px 10px;
+            font-size: 13px;
+            color: var(--text);
+        }
+
+        table tbody td.right { text-align: right; }
+        table tbody td.code  { color: var(--muted); font-size: 11px; width: 90px; }
+        table tbody td.bold  { font-weight: 600; }
+
+        /* Gross Pay row */
+        .row-gross {
+            background: var(--accent-lt) !important;
+        }
+        .row-gross td { font-weight: 600; color: var(--accent) !important; }
+
+        /* ── DIVIDER ──────────────────────────────────────────────── */
+        .divider {
+            border: none;
+            border-top: 1px dashed var(--border);
+            margin: 0;
+        }
+
+        /* ── SUMMARY PANEL ────────────────────────────────────────── */
+        .summary-panel {
+            margin-top: 28px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .summary-panel .panel-title {
+            background: var(--primary);
+            color: var(--white);
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            padding: 7px 14px;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+        }
+
+        .summary-cell {
+            padding: 16px 18px;
+            border-right: 1px solid var(--border);
+        }
+
+        .summary-cell:last-child { border-right: none; }
+
+        .summary-cell .s-label {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--muted);
+            margin-bottom: 4px;
+        }
+
+        .summary-cell .s-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .summary-cell.net .s-label { color: var(--accent); }
+        .summary-cell.net .s-value {
+            font-size: 22px;
+            color: var(--accent);
+        }
+
+        .summary-cell.deductions .s-value { color: var(--danger); }
+
+        /* ── STATUTORY NOTE ───────────────────────────────────────── */
+        .statutory-note {
+            margin-top: 20px;
+            padding: 12px 16px;
+            background: #FFF8E7;
+            border-left: 3px solid #E5A800;
+            border-radius: 0 3px 3px 0;
+            font-size: 11px;
+            color: #7A5C00;
+            line-height: 1.5;
+        }
+
+        /* ── FOOTER ───────────────────────────────────────────────── */
+        .footer {
+            margin-top: 28px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            gap: 20px;
+        }
+
+        .footer-left {
+            font-size: 11px;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+
+        .footer-right {
+            font-size: 10px;
+            color: var(--muted);
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        /* ── PRINT ────────────────────────────────────────────────── */
+        @media print {
+            body { background: white; }
+            .page { margin: 0; box-shadow: none; border: none; max-width: 100%; }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="page">
+
+    <!-- TOP COLOUR STRIPE -->
+    <div class="top-stripe"></div>
+
+    <!-- HEADER -->
+    <div class="header">
+        <div class="header-left">
+            <div class="logo-box">
+                <img src="{{.CompanyLogo}}" alt="Chalbeat Medical Centre Logo" />
+            </div>
+            <div class="company-info">
+                <h1>CHALBEAT MEDICAL CENTRE</h1>
+                <p>Payroll Department &nbsp;|&nbsp; Nairobi, Kenya</p>
+            </div>
+        </div>
+
+        <div class="header-right">
+            <div class="payslip-badge">Payslip</div>
+            <div class="period-label">Pay Period</div>
+            <div class="period-value">{{.Period}}</div>
+        </div>
+    </div>
+
+    <!-- EMPLOYEE CARD -->
+    <div class="employee-card">
+        <div class="emp-field">
+            <div class="label">Employee Name</div>
+            <div class="value">{{.Employee.Name}}</div>
+        </div>
+        <div class="emp-field">
+            <div class="label">Employee ID</div>
+            <div class="value">{{.Employee.ID}}</div>
+        </div>
+        <div class="emp-field">
+            <div class="label">KRA PIN</div>
+            <div class="value">{{.Employee.KraPin}}</div>
+        </div>
+        <div class="emp-field">
+            <div class="label">Department</div>
+            <div class="value">{{.Employee.Department}}</div>
+        </div>
+    </div>
+
+    <!-- BODY -->
+    <div class="body">
+
+        <!-- ── EARNINGS ──────────────────────────────────────────── -->
+        <div class="section-header">
+            <span class="dot"></span>
+            <h3>Earnings</h3>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th style="width:90px;">Code</th>
+                    <th>Description</th>
+                    <th class="right" style="width:160px;">Amount (KES)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="code">BASIC</td>
+                    <td>Basic Salary</td>
+                    <td class="right">{{.Earnings.BasicSalary}}</td>
+                </tr>
+                <!-- Additional earnings rows can be looped here -->
+                {{range .Earnings.Allowances}}
+                <tr>
+                    <td class="code">{{.Code}}</td>
+                    <td>{{.Description}}</td>
+                    <td class="right">{{.Amount}}</td>
+                </tr>
+                {{end}}
+                <tr class="row-gross">
+                    <td class="code">—</td>
+                    <td class="bold">Gross Pay</td>
+                    <td class="right bold">{{.Earnings.GrossPay}}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- ── DEDUCTIONS ─────────────────────────────────────────── -->
+        <div class="section-header" style="margin-top:32px;">
+            <span class="dot" style="background:var(--danger);"></span>
+            <h3>Deductions</h3>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th style="width:90px;">Code</th>
+                    <th>Description</th>
+                    <th class="right" style="width:160px;">Amount (KES)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .Deductions}}
+                <tr>
+                    <td class="code">{{.Code}}</td>
+                    <td>{{.Description}}</td>
+                    <td class="right">{{.Amount}}</td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+
+        <!-- ── SUMMARY ────────────────────────────────────────────── -->
+        <div class="summary-panel">
+            <div class="panel-title">Payment Summary</div>
+            <div class="summary-grid">
+                <div class="summary-cell">
+                    <div class="s-label">Gross Pay</div>
+                    <div class="s-value">KES {{.Totals.GrossPay}}</div>
+                </div>
+                <div class="summary-cell deductions">
+                    <div class="s-label">Total Deductions</div>
+                    <div class="s-value">KES {{.Totals.TotalDeductions}}</div>
+                </div>
+                <div class="summary-cell net">
+                    <div class="s-label">Net Pay</div>
+                    <div class="s-value">KES {{.Totals.NetPay}}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── STATUTORY NOTE ─────────────────────────────────────── -->
+        <div class="statutory-note">
+            <strong>Statutory Compliance (Kenya):</strong>&nbsp; Deductions include PAYE computed under the Income Tax Act (Cap. 470), NSSF contributions per the NSSF Act No. 45 of 2013, NHIF / SHA contributions per the Social Health Insurance Act 2023, and Housing Levy at 1.5 % of gross pay per the Affordable Housing Act 2023.
+        </div>
+
+        <!-- ── FOOTER ─────────────────────────────────────────────── -->
+        <div class="footer">
+            <div class="footer-left">
+                <strong>CHALBEAT MEDICAL CENTRE</strong><br />
+                Nairobi, Kenya &nbsp;|&nbsp; payroll@chalbeat.co.ke
+            </div>
+            <div class="footer-right">
+                This is a system-generated payslip and does not require a signature.<br />
+                Generated: {{.GeneratedAt}}
+            </div>
+        </div>
+
+    </div><!-- /body -->
+</div><!-- /page -->
+
+</body>
+</html>
