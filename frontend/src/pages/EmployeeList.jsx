@@ -28,7 +28,8 @@ export default function EmployeeList() {
     try {
       const res = await fetch(`${API_BASE}/api/v1/employees`)
       if (!res.ok) throw new Error('Unable to load employees')
-      setEmployees(await res.json())
+      const data = await res.json()
+      setEmployees(Array.isArray(data) ? data : [])
     } catch (err) {
       setError(err.message)
     } finally {
@@ -54,48 +55,60 @@ export default function EmployeeList() {
   return (
     <div className="page-card">
       <div className="toolbar">
-        <h2>Employee Directory</h2>
+        <div>
+          <h2>Employee Directory</h2>
+          <p>View records, edit details, and download payslips.</p>
+        </div>
         <div className="toolbar-actions">
           <Link className="button button-primary" to="/new">
-            Add Employee
+            + Add Employee
           </Link>
           <button className="button button-secondary" onClick={downloadZip}>
-            Download All Payslips
+            ↓ Download All Payslips
           </button>
         </div>
       </div>
 
-      {loading && <p>Loading employees…</p>}
-      {error && <p className="error-message">{error}</p>}
-      {!loading && employees.length === 0 && <p>No employees yet. Add one to get started.</p>}
+      {error && <p className="error-message" style={{ marginTop: 16 }}>{error}</p>}
 
-      {employees.length > 0 && (
+      {loading && <p className="state-message">Loading employees…</p>}
+
+      {!loading && (employees?.length ?? 0) === 0 && (
+        <p className="state-message">No employees yet. Add one to get started.</p>
+      )}
+
+      {employees?.length > 0 && (
         <div className="table-wrapper">
           <table>
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Name</th>
+                <th>Employee ID</th>
+                <th>Full Name</th>
                 <th>KRA PIN</th>
                 <th>Position</th>
-                <th>Basic Pay</th>
+                <th>Basic Pay (KES)</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {employees.map((employee) => (
                 <tr key={employee.employee_id}>
-                  <td>{employee.employee_id}</td>
-                  <td>{employee.name}</td>
-                  <td>{employee.kra_pin}</td>
+                  <td style={{ color: 'var(--muted)', fontSize: '12.5px' }}>{employee.employee_id}</td>
+                  <td style={{ fontWeight: 500 }}>{employee.name}</td>
+                  <td style={{ fontFamily: 'monospace', fontSize: '12.5px' }}>{employee.kra_pin}</td>
                   <td>{employee.position}</td>
-                  <td>{employee.basic_pay.toFixed(2)}</td>
+                  <td style={{ fontVariantNumeric: 'tabular-nums' }}>
+                    {employee.basic_pay.toLocaleString('en-KE', { minimumFractionDigits: 2 })}
+                  </td>
                   <td className="actions-cell">
-                    <Link className="button button-small" to={`/edit/${employee.employee_id}`}>
+                    <Link className="button button-small button-outline" to={`/edit/${employee.employee_id}`}>
                       Edit
                     </Link>
-                    <button className="button button-small button-outline" onClick={() => downloadPayslip(employee.employee_id)}>
-                      Payslip
+                    <button
+                      className="button button-small button-secondary"
+                      onClick={() => downloadPayslip(employee.employee_id)}
+                    >
+                      ↓ Payslip
                     </button>
                   </td>
                 </tr>

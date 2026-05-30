@@ -6,12 +6,12 @@ export default function EmployeeForm({ editMode = false }) {
   const navigate = useNavigate()
   const { id } = useParams()
   const [employee, setEmployee] = useState({
-    employee_id: '',
     name: '',
     kra_pin: '',
     position: '',
     basic_pay: '',
   })
+  const [generatedId, setGeneratedId] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [message, setMessage] = useState(null)
@@ -42,7 +42,6 @@ export default function EmployeeForm({ editMode = false }) {
     setLoading(true)
 
     const payload = {
-      employee_id: employee.employee_id,
       name: employee.name,
       kra_pin: employee.kra_pin,
       position: employee.position,
@@ -62,10 +61,12 @@ export default function EmployeeForm({ editMode = false }) {
         throw new Error(body.error || 'Unable to save employee')
       }
       const saved = await res.json()
-      setMessage(editMode ? 'Employee updated successfully.' : 'Employee created successfully.')
       if (!editMode) {
-        navigate('/')
+        setGeneratedId(saved.employee_id)
+        setMessage(`Employee created successfully. ID: ${saved.employee_id}`)
+        setTimeout(() => navigate('/'), 2000)
       } else {
+        setMessage('Employee updated successfully.')
         setEmployee(saved)
       }
     } catch (err) {
@@ -76,7 +77,7 @@ export default function EmployeeForm({ editMode = false }) {
   }
 
   function updateField(name, value) {
-    setEmployee((previous) => ({ ...previous, [name]: value }))
+    setEmployee((prev) => ({ ...prev, [name]: value }))
   }
 
   return (
@@ -84,65 +85,67 @@ export default function EmployeeForm({ editMode = false }) {
       <div className="toolbar">
         <div>
           <h2>{editMode ? 'Edit Employee' : 'Add New Employee'}</h2>
-          <p>{editMode ? 'Update the employee record and save changes.' : 'Enter the details for a new team member.'}</p>
+          <p>
+            {editMode
+              ? 'Update the employee record and save changes.'
+              : 'Enter the details for a new team member.'}
+          </p>
         </div>
         <Link className="button button-outline" to="/">
-          Back to Directory
+          ← Back to Directory
         </Link>
       </div>
 
-      {loading && <p>Loading…</p>}
-      {error && <p className="error-message">{error}</p>}
-      {message && <p className="success-message">{message}</p>}
+      {/* Feedback strips sit flush between toolbar and form */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '16px 28px 0' }}>
+        {error   && <p className="error-message"   style={{ margin: 0 }}>{error}</p>}
+        {message && <p className="success-message" style={{ margin: 0 }}>{message}</p>}
+        {generatedId && !editMode && (
+          <div className="info-banner" style={{ margin: 0 }}>
+            <strong>Employee ID:</strong> {generatedId}
+          </div>
+        )}
+        {loading && <p style={{ color: 'var(--muted)', fontSize: 13, margin: 0 }}>Please wait…</p>}
+      </div>
 
       <form className="form-grid" onSubmit={handleSubmit}>
         <label>
-          Employee ID
-          <input
-            value={employee.employee_id}
-            onChange={(event) => updateField('employee_id', event.target.value)}
-            disabled={editMode}
-            required
-            placeholder="EMP001"
-          />
-        </label>
-
-        <label>
-          Full Name
+          <span>Full Name</span>
           <input
             value={employee.name}
-            onChange={(event) => updateField('name', event.target.value)}
+            onChange={(e) => updateField('name', e.target.value)}
             required
             placeholder="Jane Doe"
           />
         </label>
 
         <label>
-          KRA PIN
+          <span>KRA PIN</span>
           <input
             value={employee.kra_pin}
-            onChange={(event) => updateField('kra_pin', event.target.value)}
+            onChange={(e) => updateField('kra_pin', e.target.value)}
             required
             placeholder="A123456789X"
+            style={{ fontFamily: 'monospace', letterSpacing: '0.5px' }}
           />
         </label>
 
         <label>
-          Job Position
+          <span>Job Position</span>
           <input
             value={employee.position}
-            onChange={(event) => updateField('position', event.target.value)}
+            onChange={(e) => updateField('position', e.target.value)}
             required
-            placeholder="Frontend Engineer"
+            placeholder="Clinical Officer"
           />
         </label>
 
         <label>
-          Basic Salary
+          <span>Basic Salary (KES)</span>
           <input
             type="number"
             value={employee.basic_pay}
-            onChange={(event) => updateField('basic_pay', event.target.value)}
+            onChange={(e) => updateField('basic_pay', e.target.value)}
             required
             min="0"
             step="0.01"
@@ -152,8 +155,11 @@ export default function EmployeeForm({ editMode = false }) {
 
         <div className="form-actions">
           <button className="button button-primary" type="submit" disabled={loading}>
-            {editMode ? 'Save Changes' : 'Create Employee'}
+            {loading ? 'Saving…' : editMode ? 'Save Changes' : 'Create Employee'}
           </button>
+          <Link className="button button-outline" to="/">
+            Cancel
+          </Link>
         </div>
       </form>
     </div>

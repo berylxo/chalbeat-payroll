@@ -8,30 +8,42 @@ function App() {
   return (
     <BrowserRouter>
       <div className="app-shell">
+
         <aside className="sidebar">
-          <div className="brand">Chalbeat Payroll</div>
+          <div className="brand">
+            <div className="brand-name">CHALBEAT MEDICAL CENTRE</div>
+            <div className="brand-sub">Payroll Management</div>
+          </div>
+
           <nav>
             <NavLink to="/" end>
               Employee Directory
             </NavLink>
-            <NavLink to="/new">Add Employee</NavLink>
+            <NavLink to="/new">
+              Add Employee
+            </NavLink>
           </nav>
+
+          <div className="sidebar-footer">
+            Kisumu, Kenya
+          </div>
         </aside>
 
         <main className="content">
           <div className="header-panel">
             <div>
               <h1>Payroll Management</h1>
-              <p>Manage under 10 employees, edit records, and generate payslips.</p>
+              <p>Manage employee records and generate compliant payslips.</p>
             </div>
           </div>
 
           <Routes>
-            <Route path="/" element={<EmployeeList />} />
-            <Route path="/new" element={<EmployeeForm />} />
+            <Route path="/"        element={<EmployeeList />} />
+            <Route path="/new"     element={<EmployeeForm />} />
             <Route path="/edit/:id" element={<EmployeeForm editMode />} />
           </Routes>
         </main>
+
       </div>
     </BrowserRouter>
   )
