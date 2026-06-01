@@ -3,10 +3,10 @@ package main
 import (
 	"database/sql"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/berylxo/chalbeat-payroll/engine"
 	"github.com/berylxo/chalbeat-payroll/models"
@@ -24,7 +24,8 @@ func main() {
 
 	dbPath := os.Getenv("DB_PATH")
 	if dbPath == "" {
-		dbPath = "payroll.db"
+		// Ensure the default database file lives inside the backend folder
+		dbPath = filepath.Join("backend", "payroll.db")
 	}
 
 	// 1. Ensure database parent directory exists before initialization.
@@ -69,42 +70,8 @@ func main() {
 	// SetupRouter registers backend API handlers (e.g., matching /api/...)
 	r := routes.SetupRouter(payrollService, employeeService)
 
-	// 7. Isolated SPA Frontend Routing Strategy
-	distDir := os.Getenv("FRONTEND_DIST")
-	if distDir == "" {
-		distDir = "../frontend/dist"
-	}
-	fileServer := http.FileServer(http.Dir(distDir))
-
-	// Register a catch-all route handler.
-	// NOTE: If routes.SetupRouter uses gorilla/mux, replace this statement with:
-	// r.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, req *http.Request) { ... })
-	r.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-		// Stop the frontend catch-all from intercepting structural API paths
-		if strings.HasPrefix(req.URL.Path, "/api") {
-			http.NotFound(w, req)
-			return
-		}
-
-		// Handle explicit file requests
-		relPath := strings.TrimPrefix(req.URL.Path, "/")
-		if relPath == "" {
-			// Serve fallback core entrypoint
-			http.ServeFile(w, req, filepath.Join(distDir, "index.html"))
-			return
-		}
-
-		requested := filepath.Join(distDir, relPath)
-		if info, err := os.Stat(requested); err == nil && !info.IsDir() {
-			fileServer.ServeHTTP(w, req)
-			return
-		}
-
-		// Fallback for client-side routing hydration (React, Vue, Svelte, etc.)
-		http.ServeFile(w, req, filepath.Join(distDir, "index.html"))
-	})
-
-	log.Printf("Server running on http://localhost:%s", port)
+	baseURL := getBaseURL(port)
+	log.Printf("Server running on %s", baseURL)
 	log.Fatal(http.ListenAndServe(":"+port, r))
 }
 
@@ -124,4 +91,45 @@ func initializeDatabase(db *sql.DB) error {
 	`
 	_, err := db.Exec(schema)
 	return err
+}
+
+func getBaseURL(port string) string {
+	// Prefer explicit configuration if provided by the environment
+	if v := os.Getenv("BASE_URL"); v != "" {
+		return v
+	}
+	if v := os.Getenv("EXTERNAL_URL"); v != "" {
+		return v
+	}
+	if v := os.Getenv("APP_URL"); v != "" {
+		return v
+	}
+
+	// Attempt to pick a non-loopback IPv4 address from the host
+	addrs, err := net.InterfaceAddrs()
+	if err == nil {
+		for _, a := range addrs {
+			switch v := a.(type) {
+			case *net.IPNet:
+				ip := v.IP
+				if ip == nil || ip.IsLoopback() {
+					continue
+				}
+				if ip4 := ip.To4(); ip4 != nil {
+					return "http://" + ip4.String() + ":" + port
+				}
+			case *net.IPAddr:
+				ip := v.IP
+				if ip == nil || ip.IsLoopback() {
+					continue
+				}
+				if ip4 := ip.To4(); ip4 != nil {
+					return "http://" + ip4.String() + ":" + port
+				}
+			}
+		}
+	}
+
+	// Final fallback
+	return "http://localhost:" + port
 }
