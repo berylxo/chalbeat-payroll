@@ -2,6 +2,8 @@ package routes
 
 import (
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/berylxo/chalbeat-payroll/handlers"
@@ -38,6 +40,37 @@ func SetupRouter(payroll *services.PayrollService, employees *services.EmployeeS
 		employeeHandler.HandleDetail(w, r)
 	}))
 	mux.HandleFunc("/api/v1/employees", withCORS(employeeHandler.HandleListCreate))
+
+	// Serve built frontend for all non-API routes (SPA support).
+	distDir := os.Getenv("FRONTEND_DIST")
+	if distDir == "" {
+		distDir = "../frontend/dist"
+	}
+	fileServer := http.FileServer(http.Dir(distDir))
+
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		// Ensure API paths are not intercepted
+		if strings.HasPrefix(r.URL.Path, "/api") {
+			http.NotFound(w, r)
+			return
+		}
+
+		// Serve explicit files when present
+		relPath := strings.TrimPrefix(r.URL.Path, "/")
+		if relPath == "" {
+			http.ServeFile(w, r, filepath.Join(distDir, "index.html"))
+			return
+		}
+
+		requested := filepath.Join(distDir, relPath)
+		if info, err := os.Stat(requested); err == nil && !info.IsDir() {
+			fileServer.ServeHTTP(w, r)
+			return
+		}
+
+		// Fallback to index.html for client-side routing
+		http.ServeFile(w, r, filepath.Join(distDir, "index.html"))
+	})
 
 	return mux
 }
