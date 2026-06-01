@@ -44,7 +44,7 @@ func SetupRouter(payroll *services.PayrollService, employees *services.EmployeeS
 	// Serve built frontend for all non-API routes (SPA support).
 	distDir := os.Getenv("FRONTEND_DIST")
 	if distDir == "" {
-		distDir = "../frontend/dist"
+		distDir = "./dist"
 	}
 	fileServer := http.FileServer(http.Dir(distDir))
 
