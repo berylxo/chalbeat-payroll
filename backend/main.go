@@ -12,12 +12,31 @@ import (
 	"github.com/berylxo/chalbeat-payroll/models"
 	"github.com/berylxo/chalbeat-payroll/routes"
 	"github.com/berylxo/chalbeat-payroll/services"
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 func main() {
-	// 1. Initialize database
-	db, err := sql.Open("sqlite3", "payroll.db")
+	// Read configuration from environment (useful for container deployments)
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	dbPath := os.Getenv("DB_PATH")
+	if dbPath == "" {
+		dbPath = "payroll.db"
+	}
+
+	// 1. Ensure database parent directory exists before initialization.
+	// Fly.io mounts override permissions on /data; this guarantees the application
+	// has structural access to create the db file.
+	dbDir := filepath.Dir(dbPath)
+	if err := os.MkdirAll(dbDir, 0755); err != nil {
+		log.Fatalf("Failed to create database directory %s: %v", dbDir, err)
+	}
+
+	// 2. Initialize database
+	db, err := sql.Open("sqlite", dbPath)
 	if err != nil {
 		log.Fatal("Failed to open database:", err)
 	}
@@ -31,51 +50,62 @@ func main() {
 		log.Fatal("Failed to initialize database:", err)
 	}
 
-	// 2. Load default calculation rules
+	// 3. Load default calculation rules
 	rules := models.DefaultRules()
 
-	// 3. Build engine
+	// 4. Build engine
 	calculator := &engine.Calculator{
 		Rules: rules,
 	}
 
-	// 4. Build services
+	// 5. Build services
 	payrollService := &services.PayrollService{
 		Calculator: calculator,
 	}
 
 	employeeService := services.NewEmployeeService(db)
 
-	// 5. Router
+	// 6. Router Setup
+	// SetupRouter registers backend API handlers (e.g., matching /api/...)
 	r := routes.SetupRouter(payrollService, employeeService)
 
-	// Serve frontend static files (production build) with SPA fallback.
-	// Routes under /api/ are registered on the mux first; this handler
-	// catches other paths and serves files from frontend/dist, falling
-	// back to index.html so React Router can handle client-side routes.
-	distDir := "../frontend/dist"
+	// 7. Isolated SPA Frontend Routing Strategy
+	distDir := os.Getenv("FRONTEND_DIST")
+	if distDir == "" {
+		distDir = "../frontend/dist"
+	}
 	fileServer := http.FileServer(http.Dir(distDir))
+
+	// Register a catch-all route handler.
+	// NOTE: If routes.SetupRouter uses gorilla/mux, replace this statement with:
+	// r.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, req *http.Request) { ... })
 	r.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-		// If the requested path corresponds to an existing file in distDir, serve it.
-		// Note: req.URL.Path begins with "/", so trim it before joining to avoid
-		// filepath.Join treating it as an absolute path and ignoring distDir.
+		// Stop the frontend catch-all from intercepting structural API paths
+		if strings.HasPrefix(req.URL.Path, "/api") {
+			http.NotFound(w, req)
+			return
+		}
+
+		// Handle explicit file requests
 		relPath := strings.TrimPrefix(req.URL.Path, "/")
 		if relPath == "" {
-			// Root path -> serve index
+			// Serve fallback core entrypoint
 			http.ServeFile(w, req, filepath.Join(distDir, "index.html"))
 			return
 		}
+
 		requested := filepath.Join(distDir, relPath)
 		if info, err := os.Stat(requested); err == nil && !info.IsDir() {
 			fileServer.ServeHTTP(w, req)
 			return
 		}
-		// Fallback to index.html for client-side routes
+
+		// Fallback for client-side routing hydration (React, Vue, Svelte, etc.)
 		http.ServeFile(w, req, filepath.Join(distDir, "index.html"))
 	})
 
-	log.Println("Server running on http://localhost:8080")
-	log.Fatal(http.ListenAndServe(":8080", r))
+	log.Printf("Server running on http://localhost:%s", port)
+	log.Fatal(http.ListenAndServe(":"+port, r))
 }
 
 func initializeDatabase(db *sql.DB) error {

@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom'
 import EmployeeList from './pages/EmployeeList'
 import EmployeeForm from './pages/EmployeeForm'
 
-export const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8080'
+export const API_BASE = import.meta.env.VITE_API_BASE || ''
 
 function App() {
   return (
