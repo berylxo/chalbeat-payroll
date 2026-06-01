@@ -12,22 +12,21 @@ type Employee struct {
 }
 
 type Deduction struct {
-	Code        string  `json:"code"`
-	Description string  `json:"description"`
-	Amount      float64 `json:"amount"`
-	Mandatory   bool    `json:"mandatory"`
-}
-
-type PayrollRequest struct {
-	BasicPay           float64     `json:"basic_pay"`
-	OptionalDeductions []Deduction `json:"optional_deductions"`
+	Code        string `json:"code"`
+	Description string `json:"description"`
+	Amount      int64  `json:"amount"`
+	Mandatory   bool   `json:"mandatory"`
 }
 
 type PayrollResult struct {
 	EmployeeID string
-
-	GrossPay float64
-	NetPay   float64
-
+	GrossPay   int64
+	NetPay     int64
 	Deductions []Deduction
+}
+
+type PayrollRequest struct {
+	EmployeeID         string      `json:"employee_id"`
+	BasicPay           float64     `json:"basic_pay"`
+	OptionalDeductions []Deduction `json:"optional_deductions"`
 }

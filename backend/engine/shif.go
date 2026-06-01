@@ -2,6 +2,6 @@ package engine
 
 import "github.com/berylxo/chalbeat-payroll/models"
 
-func CalculateSHIF(gross float64, rules models.Rules) float64 {
-	return gross * rules.ShifRate
+func CalculateSHIF(gross int64, rules models.Rules) int64 {
+	return calculatePercentage(gross, rules.ShifRate)
 }

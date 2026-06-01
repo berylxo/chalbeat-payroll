@@ -1,53 +1,30 @@
 package models
 
 type PayeBand struct {
-	Min  float64
-	Max  float64
-	Rate float64
+	Width int64   // The maximum amount of money that can fit in this band
+	Rate  float64 // The tax rate applied to this band
 }
 
 type Rules struct {
-	Paye struct {
-		Bands          []PayeBand
-		PersonalRelief float64
-	}
-
-	Nssf struct {
-		Tier1Limit float64
-		Tier1Rate  float64
-		Tier2Rate  float64
-		Tier2Cap   float64
-	}
-
 	HousingLevyRate float64
 	ShifRate        float64
+	PersonalRelief  int64
+	NssfUpperLimit  int64
+	PayeBands       []PayeBand
 }
 
 func DefaultRules() Rules {
 	return Rules{
 		HousingLevyRate: 0.015,
 		ShifRate:        0.0275,
-		Paye: struct {
-			Bands          []PayeBand
-			PersonalRelief float64
-		}{
-			Bands: []PayeBand{
-				{Min: 0, Max: 24000, Rate: 0.1},
-				{Min: 24001, Max: 32333, Rate: 0.25},
-				{Min: 32334, Max: 9999999, Rate: 0.3},
-			},
-			PersonalRelief: 2400,
-		},
-		Nssf: struct {
-			Tier1Limit float64
-			Tier1Rate  float64
-			Tier2Rate  float64
-			Tier2Cap   float64
-		}{
-			Tier1Limit: 8000,
-			Tier1Rate:  0.06,
-			Tier2Rate:  0.06,
-			Tier2Cap:   72000,
+		PersonalRelief:  240000,
+		NssfUpperLimit:  7200000,
+		PayeBands: []PayeBand{
+			{Width: 2400000, Rate: 0.10},   // First 24,000
+			{Width: 833300, Rate: 0.25},    // Next 8,333 (up to 32,333)
+			{Width: 46766700, Rate: 0.30},  // Next 467,667 (up to 500,000)
+			{Width: 30000000, Rate: 0.325}, // Next 300,000 (up to 800,000)
+			{Width: -1, Rate: 0.35},        // -1 signifies infinity/taxable balance
 		},
 	}
 }

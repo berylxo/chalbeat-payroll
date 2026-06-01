@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"html/template"
+	"math"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -13,6 +14,7 @@ import (
 	"time"
 
 	"github.com/SebastiaanKlippert/go-wkhtmltopdf"
+	"github.com/berylxo/chalbeat-payroll/engine"
 	"github.com/berylxo/chalbeat-payroll/models"
 	"github.com/berylxo/chalbeat-payroll/services"
 )
@@ -132,15 +134,20 @@ func (h *PayslipHandler) renderPayslipHTML(emp models.Employee, payroll models.P
 		KraPin     string
 		Department string
 	}
+	type deductionItemView struct {
+		Code        string
+		Description string
+		Amount      string // Changed to formatted string
+	}
 	type earningsView struct {
-		BasicSalary float64
-		GrossPay    float64
-		Allowances  []models.Deduction
+		BasicSalary string // Changed to string
+		GrossPay    string // Changed to string
+		Allowances  []deductionItemView
 	}
 	type totalsView struct {
-		GrossPay        float64
-		TotalDeductions float64
-		NetPay          float64
+		GrossPay        string // Changed to string
+		TotalDeductions string // Changed to string
+		NetPay          string // Changed to string
 	}
 	type viewData struct {
 		CompanyLogo string
@@ -148,19 +155,24 @@ func (h *PayslipHandler) renderPayslipHTML(emp models.Employee, payroll models.P
 		Period      string
 		Employee    employeeView
 		Earnings    earningsView
-		Deductions  []models.Deduction
+		Deductions  []deductionItemView
 		Totals      totalsView
 		GeneratedAt string
 	}
 
-	totals := totalsView{
-		GrossPay: payroll.GrossPay,
-		NetPay:   payroll.NetPay,
-	}
+	var formattedDeductions []deductionItemView
+	var totalDeductionsCents int64
+
 	for _, deduction := range payroll.Deductions {
-		totals.TotalDeductions += deduction.Amount
+		totalDeductionsCents += deduction.Amount
+		formattedDeductions = append(formattedDeductions, deductionItemView{
+			Code:        deduction.Code,
+			Description: deduction.Description,
+			Amount:      engine.FormatCentsToKES(deduction.Amount),
+		})
 	}
 
+	// Calculate and format values safely using integer cent foundations
 	data := viewData{
 		CompanyLogo: logoDataURI,
 		LogoPath:    "file://" + logoPath,
@@ -173,12 +185,16 @@ func (h *PayslipHandler) renderPayslipHTML(emp models.Employee, payroll models.P
 			Department: emp.Position,
 		},
 		Earnings: earningsView{
-			BasicSalary: emp.BasicPay,
-			GrossPay:    payroll.GrossPay,
+			BasicSalary: engine.FormatCentsToKES(int64(math.Round(emp.BasicPay * 100))),
+			GrossPay:    engine.FormatCentsToKES(payroll.GrossPay),
 			Allowances:  nil,
 		},
-		Deductions:  payroll.Deductions,
-		Totals:      totals,
+		Deductions: formattedDeductions,
+		Totals: totalsView{
+			GrossPay:        engine.FormatCentsToKES(payroll.GrossPay),
+			TotalDeductions: engine.FormatCentsToKES(totalDeductionsCents),
+			NetPay:          engine.FormatCentsToKES(payroll.NetPay),
+		},
 		GeneratedAt: time.Now().Format("02 Jan 2006 15:04"),
 	}
 
