@@ -16,7 +16,6 @@ type EmployeeService struct {
 	db   *sql.DB
 	mu   sync.Mutex
 }
-
 func NewEmployeeService(db *sql.DB) *EmployeeService {
 	return &EmployeeService{db: db}
 }
@@ -63,7 +62,7 @@ func (s *EmployeeService) List() []models.Employee {
 func (s *EmployeeService) Get(id string) (models.Employee, bool) {
 	var emp models.Employee
 	row := s.db.QueryRow(
-		"SELECT employee_id, name, phone_number, email, national_id, kra_pin, position, basic_pay FROM employees WHERE employee_id = ?",
+		"SELECT employee_id, name, phone_number, email, national_id, kra_pin, position, basic_pay FROM employees WHERE employee_id = $1",
 		id,
 	)
 	err := row.Scan(
@@ -86,7 +85,7 @@ func (s *EmployeeService) Create(emp models.Employee) (models.Employee, error) {
 	emp.EmployeeID = s.generateEmployeeID()
 
 	_, err := s.db.Exec(
-		"INSERT INTO employees (employee_id, name, phone_number, email, national_id, kra_pin, position, basic_pay) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+		"INSERT INTO employees (employee_id, name, phone_number, email, national_id, kra_pin, position, basic_pay) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
 		emp.EmployeeID,
 		emp.Name,
 		emp.PhoneNumber,
@@ -108,7 +107,7 @@ func (s *EmployeeService) Update(id string, emp models.Employee) (models.Employe
 	}
 
 	_, err := s.db.Exec(
-		"UPDATE employees SET name = ?, phone_number = ?, email = ?, national_id = ?, kra_pin = ?, position = ?, basic_pay = ? WHERE employee_id = ?",
+		"UPDATE employees SET name = $1, phone_number = $2, email = $3, national_id = $4, kra_pin = $5, position = $6, basic_pay = $7 WHERE employee_id = $8",
 		emp.Name,
 		emp.PhoneNumber,
 		emp.Email,

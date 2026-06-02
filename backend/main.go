@@ -6,13 +6,13 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"path/filepath"
+	"time" // Added for connection pooling durations
 
 	"github.com/berylxo/chalbeat-payroll/engine"
 	"github.com/berylxo/chalbeat-payroll/models"
 	"github.com/berylxo/chalbeat-payroll/routes"
 	"github.com/berylxo/chalbeat-payroll/services"
-	_ "modernc.org/sqlite"
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 func main() {
@@ -22,26 +22,21 @@ func main() {
 		port = "8080"
 	}
 
-	dbPath := os.Getenv("DB_PATH")
-	if dbPath == "" {
-		// Ensure the default database file lives inside the backend folder
-		dbPath = filepath.Join("backend", "payroll.db")
+	// Require Postgres URL (Neon) via `DATABASE_URL`.
+	databaseURL := os.Getenv("DATABASE_URL")
+	if databaseURL == "" {
+		log.Fatal("DATABASE_URL is required and must point to your Neon Postgres instance")
 	}
-
-	// 1. Ensure database parent directory exists before initialization.
-	// Fly.io mounts override permissions on /data; this guarantees the application
-	// has structural access to create the db file.
-	dbDir := filepath.Dir(dbPath)
-	if err := os.MkdirAll(dbDir, 0755); err != nil {
-		log.Fatalf("Failed to create database directory %s: %v", dbDir, err)
-	}
-
-	// 2. Initialize database
-	db, err := sql.Open("sqlite", dbPath)
+	db, err := sql.Open("pgx", databaseURL)
 	if err != nil {
 		log.Fatal("Failed to open database:", err)
 	}
 	defer db.Close()
+
+	// Configure connection pooling for serverless database stability
+	db.SetMaxOpenConns(10)                 // Limits concurrent connections to Neon
+	db.SetMaxIdleConns(2)                  // Keeps a small pool of idle connections warm
+	db.SetConnMaxLifetime(5 * time.Minute) // Recycles connections safely before serverless termination
 
 	if err := db.Ping(); err != nil {
 		log.Fatal("Failed to ping database:", err)
@@ -86,7 +81,7 @@ func initializeDatabase(db *sql.DB) error {
 		kra_pin TEXT NOT NULL,
 		position TEXT NOT NULL,
 		basic_pay REAL NOT NULL,
-		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		created_at TIMESTAMPTZ DEFAULT now()
 	);
 	`
 	_, err := db.Exec(schema)
@@ -94,7 +89,6 @@ func initializeDatabase(db *sql.DB) error {
 }
 
 func getBaseURL(port string) string {
-	// Prefer explicit configuration if provided by the environment
 	if v := os.Getenv("BASE_URL"); v != "" {
 		return v
 	}
@@ -105,7 +99,6 @@ func getBaseURL(port string) string {
 		return v
 	}
 
-	// Attempt to pick a non-loopback IPv4 address from the host
 	addrs, err := net.InterfaceAddrs()
 	if err == nil {
 		for _, a := range addrs {
@@ -130,6 +123,5 @@ func getBaseURL(port string) string {
 		}
 	}
 
-	// Final fallback
 	return "http://localhost:" + port
 }
