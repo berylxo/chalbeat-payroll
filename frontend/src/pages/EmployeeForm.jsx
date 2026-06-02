@@ -10,6 +10,9 @@ export default function EmployeeForm({ editMode = false }) {
     kra_pin: '',
     position: '',
     basic_pay: '',
+    phone_number: '',
+    email: '',
+    national_id: '',
   })
   const [generatedId, setGeneratedId] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -46,6 +49,9 @@ export default function EmployeeForm({ editMode = false }) {
       kra_pin: employee.kra_pin,
       position: employee.position,
       basic_pay: Number(employee.basic_pay),
+      phone_number: employee.phone_number,
+      email: employee.email,
+      national_id: employee.national_id,
     }
 
     try {
@@ -127,6 +133,34 @@ export default function EmployeeForm({ editMode = false }) {
             required
             placeholder="A123456789X"
             style={{ fontFamily: 'monospace', letterSpacing: '0.5px' }}
+          />
+        </label>
+
+        <label>
+          <span>National ID/Passport ID</span>
+          <input
+            value={employee.national_id}
+            onChange={(e) => updateField('national_id', e.target.value)}
+            placeholder="12345678"
+          />
+        </label>
+
+        <label>
+          <span>Phone Number</span>
+          <input
+            value={employee.phone_number}
+            onChange={(e) => updateField('phone_number', e.target.value)}
+            placeholder="+254712345678"
+          />
+        </label>
+
+        <label>
+          <span>Email</span>
+          <input
+            type="email"
+            value={employee.email}
+            onChange={(e) => updateField('email', e.target.value)}
+            placeholder="jane@example.com"
           />
         </label>
 

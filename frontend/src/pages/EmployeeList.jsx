@@ -41,6 +41,22 @@ export default function EmployeeList() {
     window.open(`${API_BASE}/api/v1/employees/${id}/payslip`, '_blank')
   }
 
+  async function deleteEmployee(id) {
+    const ok = window.confirm('Delete this employee record? This action cannot be undone.')
+    if (!ok) return
+
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/employees/${id}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error || 'Unable to delete employee')
+      }
+      setEmployees((prev) => prev.filter((e) => e.employee_id !== id))
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
   async function downloadZip() {
     try {
       const res = await fetch(`${API_BASE}/api/v1/employees/payslips/zip`)
@@ -109,6 +125,13 @@ export default function EmployeeList() {
                       onClick={() => downloadPayslip(employee.employee_id)}
                     >
                       ↓ Payslip
+                    </button>
+                    <button
+                      className="button button-small button-danger"
+                      onClick={() => deleteEmployee(employee.employee_id)}
+                      title="Delete employee"
+                    >
+                      ✕ Delete
                     </button>
                   </td>
                 </tr>

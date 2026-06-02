@@ -270,6 +270,17 @@ a { text-decoration: none; }
   font-size: 12.5px;
 }
 
+.button-danger {
+  background: var(--danger);
+  color: #fff;
+}
+
+.button-danger:hover {
+  background: #992d22;
+  box-shadow: 0 3px 10px rgba(192,57,43,.22);
+  transform: translateY(-1px);
+}
+
 /* ── Table ─────────────────────────────────────────────────────────── */
 .table-wrapper {
   overflow-x: auto;
