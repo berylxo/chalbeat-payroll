@@ -172,14 +172,23 @@ func (h *PayslipHandler) renderPayslipHTML(emp models.Employee, payroll models.P
 		})
 	}
 
+	// download previous month is date less than 20th
+	displayPeriod := func(t time.Time) string {
+		if t.Day() < 20 {
+			firstOfCurrentMonth := time.Date(t.Year(), t.Month(), 1, 0, 0, 0, 0, t.Location())
+			return firstOfCurrentMonth.AddDate(0, -1, 0).Format("January 2006")
+		}
+		return t.Format("January 2006")
+	}(time.Now())
+
 	// Calculate and format values safely using integer cent foundations
 	data := viewData{
 		CompanyLogo: logoDataURI,
 		LogoPath:    "file://" + logoPath,
-		Period:      time.Now().Format("January 2006"),
+		Period:      displayPeriod,
 		Employee: employeeView{
 			Name:       emp.Name,
-			ID:         emp.EmployeeID,
+			ID:         emp.NationalID,
 			EmployeeID: emp.EmployeeID,
 			KraPin:     emp.KraPin,
 			Department: emp.Position,
