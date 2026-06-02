@@ -45,6 +45,11 @@ func (h *EmployeeHandler) HandleDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if r.Method == http.MethodDelete {
+		h.delete(w, r, id)
+		return
+	}
+
 	h.methodNotAllowed(w, r)
 }
 
@@ -92,6 +97,16 @@ func (h *EmployeeHandler) update(w http.ResponseWriter, r *http.Request, id stri
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(updated)
+}
+
+func (h *EmployeeHandler) delete(w http.ResponseWriter, r *http.Request, id string) {
+	err := h.Service.Delete(id)
+	if err != nil {
+		h.writeError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h *EmployeeHandler) writeError(w http.ResponseWriter, err error) {

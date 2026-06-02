@@ -13,9 +13,10 @@ var ErrEmployeeNotFound = errors.New("employee not found")
 var ErrEmployeeExists = errors.New("employee already exists")
 
 type EmployeeService struct {
-	db   *sql.DB
-	mu   sync.Mutex
+	db *sql.DB
+	mu sync.Mutex
 }
+
 func NewEmployeeService(db *sql.DB) *EmployeeService {
 	return &EmployeeService{db: db}
 }
@@ -123,4 +124,23 @@ func (s *EmployeeService) Update(id string, emp models.Employee) (models.Employe
 
 	emp.EmployeeID = id
 	return emp, nil
+}
+
+func (s *EmployeeService) Delete(id string) error {
+	if id == "" {
+		return errors.New("employee id is required")
+	}
+
+	res, err := s.db.Exec("DELETE FROM employees WHERE employee_id = $1", id)
+	if err != nil {
+		return err
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return ErrEmployeeNotFound
+	}
+	return nil
 }
